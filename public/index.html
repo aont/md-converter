@@ -329,6 +329,36 @@
     return s;
   }
 
+  function isUtmSourceParam(param){
+    const name = param.split("=", 1)[0];
+    try{
+      return decodeURIComponent(name.replace(/\+/g, " ")) === "utm_source";
+    }catch(e){
+      return name === "utm_source";
+    }
+  }
+
+  function removeUtmSourceFromUrl(url){
+    const hashIndex = url.indexOf("#");
+    const beforeHash = hashIndex === -1 ? url : url.slice(0, hashIndex);
+    const hashPart = hashIndex === -1 ? "" : url.slice(hashIndex);
+
+    const queryIndex = beforeHash.indexOf("?");
+    if(queryIndex === -1) return url;
+
+    const basePart = beforeHash.slice(0, queryIndex);
+    const queryPart = beforeHash.slice(queryIndex + 1);
+    const remainingParams = queryPart
+      .split("&")
+      .filter((param) => param && !isUtmSourceParam(param));
+
+    if(remainingParams.length === 0){
+      return basePart + hashPart;
+    }
+
+    return basePart + "?" + remainingParams.join("&") + hashPart;
+  }
+
   function parseReferenceDefinitionLine(line){
     // Split reference definitions by the first and second whitespace separators:
     // [id]: url
@@ -346,7 +376,7 @@
     const urlPart = firstWhitespace === -1 ? remainder : remainder.slice(0, firstWhitespace);
     const titlePart = firstWhitespace === -1 ? "" : remainder.slice(firstWhitespace).trim();
 
-    const url = trimAngleBrackets(urlPart.trim());
+    const url = removeUtmSourceFromUrl(trimAngleBrackets(urlPart.trim()));
     const title = trimTitleWrapper(titlePart).trim();
 
     if(!url) return null;
