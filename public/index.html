@@ -310,19 +310,46 @@
     return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   }
 
+  function trimAngleBrackets(s){
+    if(s.startsWith("<") && s.endsWith(">") && s.length >= 2){
+      return s.slice(1, -1);
+    }
+    return s;
+  }
+
+  function trimTitleWrapper(s){
+    if(s.length < 2) return s;
+
+    const first = s[0];
+    const last = s[s.length - 1];
+    if((first === '"' && last === '"') || (first === "'" && last === "'") || (first === "(" && last === ")")){
+      return s.slice(1, -1);
+    }
+
+    return s;
+  }
+
   function parseReferenceDefinitionLine(line){
+    // Split reference definitions by the first and second whitespace separators:
     // [id]: url
-    // [id]: <url>
-    // optional title: "title" | 'title' | (title)
-    const re = /^\s*\[([^\]]+)\]\s*:\s*(?:<([^>\s]+)>|([^\s]+))\s*(?:(?:"([^"]*)")|(?:'([^']*)')|(?:\(([^)]*)\)))?\s*$/;
-    const m = line.match(re);
-    if(!m) return null;
+    // [id]: url title text
+    // [id]: <url> optional title text
+    const trimmedLine = line.trim();
+    const labelMatch = trimmedLine.match(/^\[([^\]]+)\]:/);
+    if(!labelMatch) return null;
 
-    const idRaw = m[1];
-    const url = (m[2] || m[3] || "").trim();
-    const title = (m[4] ?? m[5] ?? m[6] ?? "").trim();
+    const idRaw = labelMatch[1];
+    const remainder = trimmedLine.slice(labelMatch[0].length).trim();
+    if(!idRaw || !remainder) return null;
 
-    if(!idRaw || !url) return null;
+    const firstWhitespace = remainder.search(/\s/);
+    const urlPart = firstWhitespace === -1 ? remainder : remainder.slice(0, firstWhitespace);
+    const titlePart = firstWhitespace === -1 ? "" : remainder.slice(firstWhitespace).trim();
+
+    const url = trimAngleBrackets(urlPart.trim());
+    const title = trimTitleWrapper(titlePart).trim();
+
+    if(!url) return null;
     return { idRaw, url, title: title || null };
   }
 
