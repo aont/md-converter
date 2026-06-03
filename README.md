@@ -6,7 +6,7 @@ A small, dependency-free web app that converts Markdown reference-style links in
 
 - Converts reference-style links such as `[label][id]` and collapsed references such as `[label][]`.
 - Leaves unresolved references unchanged.
-- Keeps reference-style images such as `![alt][id]` untouched.
+- Converts reference-style images such as `![alt][id]` into inline images such as `![alt](URL "title")`.
 - Removes `utm_source` query parameters from converted URLs.
 - Appends a references section using a customizable heading.
 - Supports dark, light, and system theme modes.
@@ -43,7 +43,7 @@ Read the [docs](https://example.com/docs "project docs: Documentation https://ex
 
 - Multi-line reference definitions are not supported.
 - Inline links are not transformed.
-- Reference-style images are intentionally not converted.
+- Reference-style images are converted when their reference definitions are available.
 - Existing references-heading detection is case-sensitive.
 
 ## Development

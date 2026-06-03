@@ -267,7 +267,7 @@
         <ul style="margin:6px 0 0; padding-left:18px;">
           <li>No support for multi-line reference definitions.</li>
           <li>Inline links are not transformed.</li>
-          <li>Reference-style images (<span class="kbd">![alt][id]</span>) are intentionally not converted.</li>
+          <li>Reference-style images (<span class="kbd">![alt][id]</span>) are converted to inline images.</li>
           <li>Existing heading detection is case-sensitive for heading text.</li>
         </ul>
       </div>
@@ -409,28 +409,31 @@
     }
     let body = bodyLines.join("\n");
 
-    // Convert reference-style links in body, excluding images and unresolved IDs
+    // Convert reference-style links and images in body, leaving unresolved IDs unchanged.
     const usedOrder = [];
     const usedSet = new Set();
 
-    // Matches [label][id] and [label][]
-    const linkRe = /(!)?\[([^\]\n]+)\]\[([^\]\n]*)\]/g;
-    body = body.replace(linkRe, (full, bang, label, idPart) => {
-      if(bang) return full; // exclude images
-
+    // Matches [label][id], [label][], ![alt][id], and ![alt][]
+    const referenceRe = /(!)?\[([^\]\n]+)\]\[([^\]\n]*)\]/g;
+    body = body.replace(referenceRe, (full, bang, label, idPart) => {
       const idResolved = (idPart && idPart.length > 0) ? idPart : label; // collapsed uses label
       const nid = normalizeId(idResolved);
 
       const def = defs.get(nid);
       if(!def) return full; // unresolved: unchanged
 
+      const url = def.url;
+      const title = def.title;
+
+      if(bang){
+        const titleSuffix = title ? ` "${escapeTooltip(title)}"` : "";
+        return `![${label}](${url}${titleSuffix})`;
+      }
+
       if(!usedSet.has(nid)){
         usedSet.add(nid);
         usedOrder.push(nid);
       }
-
-      const url = def.url;
-      const title = def.title;
 
       const tooltipRaw = title
         ? `${label}: ${title} ${url}`
