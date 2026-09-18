@@ -6,36 +6,16 @@
   <title>Markdown Reference Converter</title>
   <style>
     :root{
-      /* Dark (default) */
-      --bg:#0b0f14;
-      --panel:#111826;
-      --panel2:#0f1623;
-      --text:#e6edf3;
-      --muted:#9fb0c0;
-      --border:#223047;
-      --success:#1f9d55;
-      --warning:#d4a017;
-      --danger:#d64545;
-      --btn:#1b2a44;
-      --btnHover:#24385b;
-      --primary1:#1c3357;
-      --primary2:#142847;
-      --primaryHover1:#23406c;
-      --primaryHover2:#162c4e;
-      --focus:#4ea1ff;
-      --field:#0b1220;
-      --shadow:rgba(0,0,0,.25);
-      --headerBg:rgba(17,24,38,.65);
-    }
-
-    /* Light theme overrides */
-    :root[data-theme="light"]{
+      color-scheme:light;
       --bg:#f6f7fb;
       --panel:#ffffff;
       --panel2:#fbfcff;
       --text:#0b1220;
       --muted:#465569;
       --border:#d7deea;
+      --success:#1f9d55;
+      --warning:#d4a017;
+      --danger:#d64545;
       --btn:#eef2f8;
       --btnHover:#e4ebf6;
       --primary1:#dbeafe;
@@ -46,6 +26,28 @@
       --field:#ffffff;
       --shadow:rgba(17,24,39,.12);
       --headerBg:rgba(255,255,255,.8);
+    }
+
+    @media (prefers-color-scheme: dark){
+      :root{
+        color-scheme:dark;
+        --bg:#0b0f14;
+        --panel:#111826;
+        --panel2:#0f1623;
+        --text:#e6edf3;
+        --muted:#9fb0c0;
+        --border:#223047;
+        --btn:#1b2a44;
+        --btnHover:#24385b;
+        --primary1:#1c3357;
+        --primary2:#142847;
+        --primaryHover1:#23406c;
+        --primaryHover2:#162c4e;
+        --focus:#4ea1ff;
+        --field:#0b1220;
+        --shadow:rgba(0,0,0,.25);
+        --headerBg:rgba(17,24,38,.65);
+      }
     }
 
     *{box-sizing:border-box}
@@ -124,12 +126,12 @@
       line-height:1.45;
       outline:none;
     }
-    textarea:focus, input[type="text"]:focus, select:focus{
+    textarea:focus, input[type="text"]:focus{
       border-color:color-mix(in srgb, var(--focus) 70%, transparent);
       box-shadow:0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent);
     }
     textarea[readonly]{opacity:.98;}
-    input[type="text"], select{
+    input[type="text"]{
       padding:8px 10px;
       border-radius:10px;
       border:1px solid var(--border);
@@ -139,7 +141,6 @@
       font-size:13px;
     }
     input[type="text"]{ width:min(420px, 100%); }
-    select{ cursor:pointer; }
     button{
       appearance:none;
       border:1px solid var(--border);
@@ -187,15 +188,6 @@
       color:var(--text);
       font-size:12px;
     }
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:linear-gradient(180deg,var(--panel),var(--panel2));
-    }
   </style>
 </head>
 <body>
@@ -206,14 +198,6 @@
       <p>Converts reference-style links into inline links and appends a readable references section.</p>
     </div>
 
-    <div class="chip" aria-label="Theme selector">
-      <label for="themeSelect" style="margin:0; font-size:12px;">Theme</label>
-      <select id="themeSelect">
-        <option value="auto">Auto</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-      </select>
-    </div>
   </div>
 </header>
 
@@ -286,9 +270,6 @@
   const copyBtn = $("#copyBtn");
   const statusEl = $("#status");
   const headingInput = $("#headingInput");
-  const themeSelect = $("#themeSelect");
-
-  const THEME_KEY = "mdRefConv.theme"; // 'auto' | 'light' | 'dark'
 
   function setStatus(kind, msg){
     statusEl.style.display = "block";
@@ -463,58 +444,6 @@
     return body;
   }
 
-  // Theme handling: auto uses system preference; light/dark forces.
-  function applyTheme(mode){
-    // mode: 'auto' | 'light' | 'dark'
-    if(mode === "light"){
-      document.documentElement.setAttribute("data-theme", "light");
-    }else if(mode === "dark"){
-      document.documentElement.removeAttribute("data-theme"); // default is dark
-    }else{
-      // auto
-      const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-      if(prefersLight){
-        document.documentElement.setAttribute("data-theme", "light");
-      }else{
-        document.documentElement.removeAttribute("data-theme");
-      }
-    }
-  }
-
-  function loadTheme(){
-    const saved = localStorage.getItem(THEME_KEY) || "auto";
-    themeSelect.value = saved;
-    applyTheme(saved);
-  }
-
-  function saveTheme(mode){
-    localStorage.setItem(THEME_KEY, mode);
-  }
-
-  // React to system changes when in auto mode
-  const mql = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
-  if(mql && mql.addEventListener){
-    mql.addEventListener("change", () => {
-      if((localStorage.getItem(THEME_KEY) || "auto") === "auto"){
-        applyTheme("auto");
-      }
-    });
-  }else if(mql && mql.addListener){
-    // Safari fallback
-    mql.addListener(() => {
-      if((localStorage.getItem(THEME_KEY) || "auto") === "auto"){
-        applyTheme("auto");
-      }
-    });
-  }
-
-  themeSelect.addEventListener("change", () => {
-    const mode = themeSelect.value;
-    saveTheme(mode);
-    applyTheme(mode);
-    setStatus("success", `Theme set to: ${mode}`);
-  });
-
   async function pasteFromClipboard(){
     try{
       if(!navigator.clipboard || !navigator.clipboard.readText){
@@ -571,8 +500,6 @@
   convertBtn.addEventListener("click", onConvert);
   copyBtn.addEventListener("click", copyToClipboard);
 
-  // Init
-  loadTheme();
 })();
 </script>
 </body>
